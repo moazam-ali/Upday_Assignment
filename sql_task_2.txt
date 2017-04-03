@@ -1,0 +1,33 @@
+create table session_detail
+as
+(
+session_id,
+event_name,
+min(at) as at,
+sum(event_duration) as event_duration,
+count(*) event_count
+from session_events
+group by 1,2
+)with data primary index(sessio_id,event_name);
+
+
+select 
+b.session_id,
+b.session_start_time as at,
+case when top_3_events_selector = 1 then event_name else null end as name_1,
+case when top_3_events_selector = 1 then event_duration else null end as duration_1,
+case when top_3_events_selector = 1 then event_count else null end as event_count_1,
+case when top_3_events_selector = 2 then event_name else null end as name_2,
+case when top_3_events_selector = 2 then event_duration else null end as duration_2,
+case when top_3_events_selector = 2 then event_count else null end as event_count_2,
+case when top_3_events_selector = 3 then event_name else null end as name_3,
+case when top_3_events_selector = 3 then event_duration else null end as duration_3,
+case when top_3_events_selector = 3 then event_count else null end as event_count_3
+from
+(
+select 
+a.*,
+min(at) over (partition by session_id order by at) as session_start_time,
+row_number () over (partition by session_id order by at) as top_3_events_selector
+from session_detail a
+)b
